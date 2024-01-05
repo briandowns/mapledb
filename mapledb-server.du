@@ -1,0 +1,143 @@
+#!/usr/bin/env dictu
+
+import Socket;
+import System;
+
+from Argparse import Parser;
+
+import "maple.du" as maple;
+from "db.du" import DB;
+from "slog/slog.du" import Log;
+
+const invalidCmd = "-Error invalid command" + maple.crlf,
+      unknownCmd = "-Error unknown command" + maple.crlf;
+
+/**
+ * processRequest
+ */
+def processRequest(db, client, address) {
+    var payload = client.recv(maple.readBuffer);
+    if (not payload.success()) {
+        return res.unwrapError();
+    }
+    var userInput = payload.unwrap();
+
+    userInput = userInput.replace(maple.crlf, "");
+    const preprocessed = userInput.split(" ");
+
+    const cmd = preprocessed[0];
+
+    switch (cmd) {
+        case maple.getCmd: {
+            if (preprocessed.len() != 2) {
+                client.write(invalidCmd);
+                client.close();
+                
+                return Error(invalidCmd);
+            }
+            const res = "{}{}".format(db.get(preprocessed[1]), maple.crlf);
+            client.write(res);
+        }
+        case maple.setCmd: {
+            if (preprocessed.len() != 3) {
+                client.write(invalidCmd);
+                client.close();
+
+                return Error(invalidCmd);
+            }
+            
+            db.set(preprocessed[1], preprocessed[2]);
+            client.write("OK" + maple.crlf);
+        }
+        case maple.delCmd: {
+            if (preprocessed.len() != 2) {
+                client.write(invalidCmd);
+                client.close();
+
+                return Error(invalidCmd);
+            }
+
+            db.del(preprocessed[1]);
+            client.write("OK" + maple.crlf);
+        }
+    }
+
+    return Success(nil);
+}
+
+{ // main
+    const parser = Parser("mapledb-server", "MapleDB Server");
+    parser.addBool("-h", "help", false);
+    parser.addNumber("-p", "listening port", false);
+    parser.addNumber("-d", "db name on disk", false);
+    parser.addBool("--debug", "debug", false);
+
+    const args = parser.parse().match(
+        def (result) => result,
+        def (error) => {
+            print(error);
+            System.exit(1);
+        }
+    );
+
+    if (args.h) {
+        print(parser.usage());
+        System.exit(0);
+    }
+
+    var port = maple.defaultServerPort;
+    if (args.p != nil) {
+        port = args.p;
+    }
+
+    const logger = Log();
+    logger.info("Starting MapleDB Server");
+
+    var socket = Socket.create(Socket.AF_INET, Socket.SOCK_STREAM).match(
+        def(result) => result, 
+        def(error) => {
+            logger.error(res.unwrapError());
+            System.exit(1);
+        }
+    );
+    
+    var res = socket.setsockopt(Socket.SOL_SOCKET, Socket.SO_REUSEADDR);
+    if (not res.success()) {
+        logger.error(res.unwrapError());
+        System.exit(1);
+    }
+
+    res = socket.bind("127.0.0.1", port);
+    if (not res.success()) {
+        logger.error(res.unwrapError());
+        System.exit(1);
+    }
+
+    res = socket.listen(port);
+    if (not res.success()) {
+        logger.error(res.unwrapError());
+        System.exit(1);
+    }
+    logger.info("accepting client connections", {"port": port});
+
+    var db = nil;
+    if (args.d != nil) {
+        db = DB(args.d);
+    } else {
+        db = DB();
+    }
+
+    while {
+        const [client, address] = socket.accept().unwrap();
+
+        const ret = processRequest(db, client, address);
+        if (not ret.success()) {
+            logger.error(res.unwrapError());
+        }
+    }
+
+    socket.close();
+    db.close();
+
+    System.exit(0);
+}

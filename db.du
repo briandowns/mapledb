@@ -1,0 +1,116 @@
+import Sqlite;
+import System;
+
+
+/**
+ * DB is a key / value store that can be either in-memory
+ * or persisted to disk.
+ */
+class DB {
+    init(filename="") {
+        if (filename != "") {
+            this.db = Sqlite.connect(filename).unwrap();
+        } else {
+            this.db = Sqlite.connect(":memory:").unwrap();
+        }
+
+        this.setup();    
+    }
+
+    /**
+     * setup makes sure that table the data is stored in exists.
+     */
+    private setup() {
+        this.db.execute("CREATE TABLE IF NOT EXISTS db (key text unique, value text)").unwrap();
+    }
+
+    /**
+     * close closes the db connection.
+     */
+    close() {
+        this.db.close();
+    }
+
+    /**
+     * get retrieves the value for the given key. If the key doesn't
+     * exist, an empty string is returned.
+     */
+    get(item) {
+        const row = this.db.execute("SELECT value FROM db WHERE key = ?", [item]).unwrap();
+        return row.len() == 0 ? "" : row[0][0];
+    }
+
+    /**
+     * set sets the given key to the value provided. If the key exists, the value 
+     * is updated.
+     */
+    set(key, value) {
+        this.db.execute("REPLACE INTO db (key, value) VALUES (?, ?)", [key, value]).unwrap();
+    }
+
+    /**
+     * del deletes the item identified by the given key
+     * from the db.
+     */
+    del(key) {
+        return this.db.execute('DELETE FROM db WHERE key = ?', [key]).unwrap();
+    }
+
+    /**
+     * contains checks if the given key exists in the db.
+     */
+    contains(key) {
+        const res = this.db.execute("SELECT 1 FROM db WHERE key = ?", [key]).unwrap();
+        return res.len() == 0 ? false : true;
+    }
+
+    /**
+     * keys returns a list of all keys in the db.
+     */
+    keys() {
+        const rows =  this.db.execute("SELECT key FROM db").unwrap();
+        return rows.len() != 0 ? rows.map(def(r) => r[0]) : [];
+    }
+
+    /**
+     * values returns a list of all values in the db.
+     */
+    values() {
+        const rows =  this.db.execute("SELECT value FROM db").unwrap();
+        return rows.len() != 0 ? rows.map(def(r) => r[0]) : [];
+    }
+
+    /**
+     * items returns all items in the db.
+     */
+    items() {
+        const rows = this.db.execute("SELECT key, value FROM db").unwrap();
+        return rows;
+    }
+
+    /**
+     * len returns the number of keys in the db.
+     */
+    len() {
+        const rows = this.db.execute("SELECT COUNT(*) FROM db").unwrap();
+        return rows[0][0];
+    }
+}
+
+// { // main
+//     const db = DB();
+
+//     db.set("name", "Brian Downs");
+//     db.set("wife_name", "Jessica Downs");
+//     const name = db.get("name");
+//     print(name);
+//     print(db.len());
+//     print(db.items());
+//     print(db.keys());
+//     print(db.values());
+//     print(db.contains("name"));
+
+//     db.close();
+
+//     System.exit(0);
+// }

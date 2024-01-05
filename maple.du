@@ -1,0 +1,9 @@
+const crlf = "\r\n";
+
+const readBuffer = 2048;
+
+const getCmd = "GET",
+      setCmd = "SET",
+      delCmd = "DEL";
+
+const defaultServerPort = 6382;

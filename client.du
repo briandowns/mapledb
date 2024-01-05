@@ -1,0 +1,95 @@
+import Socket;
+
+import "maple.du" as maple;
+
+class Client {
+    init(var server, var port) {}
+
+    /**
+     * close
+     */
+    private close() {
+        this.socket.close();
+    }
+
+    /**
+     * connect
+     */
+    connect() {
+        var res = Socket.create(Socket.AF_INET, Socket.SOCK_STREAM);
+        if (not res.success()) {
+            return Error(res.unwrapError());
+        }
+
+        this.socket = res.unwrap();
+        res = this.socket.connect(this.server, this.port);
+        if (not res.success()) {
+            return Error(res.unwrapError());
+        }
+
+        return Success(nil);
+    }
+
+    /**
+     * get
+     */
+    get(key) {
+        const cmd = maple.getCmd + " " + key + maple.crlf;
+        print(cmd);
+
+        var res = this.socket.write(cmd);
+        if (not res.success()) {
+            return Error(res.unwrapError());
+        }
+
+        res = this.socket.recv(maple.readBuffer);
+        if (not res.success()) {
+            return Error(res.unwrapError());
+        }
+
+        print(res.unwrap());
+
+        return Success(res.unwrap());
+    }
+
+    /**
+     * set
+     */
+    set(key, value) {
+        const cmd = "{} {} {}{}".format(maple.setCmd, key, value, maple.crlf);
+        var res = this.socket.write(cmd);
+        if (not res.success()) {
+            return Error(res.unwrapError());
+        }
+
+        res = this.socket.recv(maple.readBuffer);
+        if (not res.success()) {
+            return Error(res.unwrapError());
+        }
+
+        print(res.unwrap());
+
+        return Success(res.unwrap());
+    }
+
+    /**
+     * del
+     */
+    del(key) {
+        const cmd = maple.delCmd + " " + key + maple.crlf;
+        print(cmd);
+        var res = this.socket.write(cmd);
+        if (not res.success()) {
+            return Error(res.unwrapError());
+        }
+
+        res = this.socket.recv(maple.readBuffer);
+        if (not res.success()) {
+            return Error(res.unwrapError());
+        }
+
+        print(res.unwrap());
+
+        return Success(res.unwrap());
+    }
+}
