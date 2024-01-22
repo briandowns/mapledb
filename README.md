@@ -13,6 +13,8 @@ MapleDB is a simple key/value store module with a very simple API that can be ra
 ## Usage
 
 ```cs
+from "db.du" import DB;
+
 const db = DB();
 
 db.set("name", "Brian Downs");
