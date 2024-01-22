@@ -96,21 +96,3 @@ class DB {
         return rows[0][0];
     }
 }
-
-// { // main
-//     const db = DB();
-
-//     db.set("name", "Brian Downs");
-//     db.set("wife_name", "Jessica Downs");
-//     const name = db.get("name");
-//     print(name);
-//     print(db.len());
-//     print(db.items());
-//     print(db.keys());
-//     print(db.values());
-//     print(db.contains("name"));
-
-//     db.close();
-
-//     System.exit(0);
-// }
