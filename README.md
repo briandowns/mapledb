@@ -12,6 +12,12 @@ MapleDB is a simple key/value store module with a very simple API that can be ra
 
 When setting keys with a TTL, the TTL value given should be the number of seconds this value should live for.
 
+## Installation
+
+```sh
+dictum install github.com/briandowns/mapledb
+```
+
 ## Usage
 
 ```cs

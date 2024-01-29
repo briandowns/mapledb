@@ -1,8 +1,15 @@
 {
     "name": "MapleDB",
-    "description": "key/value database module and server",
+    "description": "key/value database module",
     "version": "v0.1.0",
     "license": "BSD 3 clause",
-    "maintainers": [],
-    "dependencies": []
+    "maintainers": [
+        {
+            "name": "Brian Downs",
+            "user": "github.com/briandowns"
+        }
+    ],
+    "dependencies": [
+        "github.com/briandowns/slog"
+    ]
 }
