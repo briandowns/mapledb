@@ -1,0 +1,8 @@
+from UnitTest import UnitTest;
+
+
+UnitTest.forceOnlyFailures = true;
+
+import "new.du";
+import "get.du";
+import "set.du";
