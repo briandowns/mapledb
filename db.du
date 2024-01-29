@@ -21,7 +21,7 @@ class DB {
      * setup makes sure that table the data is stored in exists.
      */
     private setup() {
-        this.db.execute("CREATE TABLE IF NOT EXISTS db (key text unique, value text)").unwrap();
+        this.db.execute("CREATE TABLE IF NOT EXISTS db (field TEXT PRIMARY KEY, value TEXT, expiresAt INTEGER)").unwrap();
     }
 
     /**
@@ -35,8 +35,9 @@ class DB {
      * get retrieves the value for the given key. If the key doesn't
      * exist, an empty string is returned.
      */
-    get(item) {
-        const row = this.db.execute("SELECT value FROM db WHERE key = ?", [item]).unwrap();
+    get(key) {
+        const now = System.time();
+        const row = this.db.execute("SELECT value FROM db WHERE field = ? AND expiresAt == 0 OR expiresAt > ?", [key, now]).unwrap();
         return row.len() == 0 ? "" : row[0][0];
     }
 
@@ -44,8 +45,14 @@ class DB {
      * set sets the given key to the value provided. If the key exists, the value 
      * is updated.
      */
-    set(key, value) {
-        this.db.execute("REPLACE INTO db (key, value) VALUES (?, ?)", [key, value]).unwrap();
+    set(key, value, ttl=0) {
+        var expiresAt = 0;
+
+        if (ttl > 0) {
+            expiresAt += System.time() + ttl;
+        }
+        
+        this.db.execute("INSERT OR REPLACE INTO db (field, value, expiresAt) VALUES (?, ?, ?)", [key, value, expiresAt]).unwrap();
     }
 
     /**
@@ -53,14 +60,15 @@ class DB {
      * from the db.
      */
     del(key) {
-        return this.db.execute('DELETE FROM db WHERE key = ?', [key]).unwrap();
+        return this.db.execute('DELETE FROM db WHERE field = ?', [key]).unwrap();
     }
 
     /**
      * contains checks if the given key exists in the db.
      */
     contains(key) {
-        const res = this.db.execute("SELECT 1 FROM db WHERE key = ?", [key]).unwrap();
+        const now = System.time();
+        const res = this.db.execute("SELECT 1 FROM db WHERE field = ? AND expiresAt >= ? OR expiresAt == 0", [key, now]).unwrap();
         return res.len() == 0 ? false : true;
     }
 
@@ -68,7 +76,8 @@ class DB {
      * keys returns a list of all keys in the db.
      */
     keys() {
-        const rows =  this.db.execute("SELECT key FROM db").unwrap();
+        const now = System.time();
+        const rows = this.db.execute("SELECT field FROM db WHERE expiresAt >= ? OR expiresAt == 0", [now]).unwrap();
         return rows.len() != 0 ? rows.map(def(r) => r[0]) : [];
     }
 
@@ -76,7 +85,8 @@ class DB {
      * values returns a list of all values in the db.
      */
     values() {
-        const rows =  this.db.execute("SELECT value FROM db").unwrap();
+        const now = System.time();
+        const rows = this.db.execute("SELECT value FROM db WHERE expiresAt >= ? OR expiresAt == 0", [now]).unwrap();
         return rows.len() != 0 ? rows.map(def(r) => r[0]) : [];
     }
 
@@ -84,7 +94,8 @@ class DB {
      * items returns all items in the db.
      */
     items() {
-        const rows = this.db.execute("SELECT key, value FROM db").unwrap();
+        const now = System.time();
+        const rows = this.db.execute("SELECT field, value FROM db WHERE expiresAt >= ? OR expiresAt == 0", [now]).unwrap();
         return rows;
     }
 
@@ -92,7 +103,13 @@ class DB {
      * len returns the number of keys in the db.
      */
     len() {
-        const rows = this.db.execute("SELECT COUNT(*) FROM db").unwrap();
+        const now = System.time();
+        const rows = this.db.execute("SELECT COUNT(*) FROM db WHERE expiresAt >= ? OR expiresAt == 0", [now]).unwrap();
         return rows[0][0];
     }
+
+    /**
+     * purgeExpired
+     */
+     purgedExpired() {}
 }
