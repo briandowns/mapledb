@@ -1,0 +1,29 @@
+import IO;
+import Process;
+import System;
+
+from UnitTest import UnitTest;
+
+from "../db.du" import DB;
+
+
+class TestNewDB < UnitTest {
+    const testDBFile = "unit_tests.db";
+
+    tearDown() {
+        this.db.close();
+        System.remove(this.testDBFile);
+    }
+
+    testNewMemoryDB() {
+        this.db = DB();
+        this.assertNotNil(this.db);
+    }
+
+    testNewFileDB() {
+        this.db = DB(this.testDBFile);
+        this.assertNotNil(this.db);
+    }
+}
+
+TestNewDB().run();

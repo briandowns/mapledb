@@ -3,12 +3,14 @@
 MapleDB is a simple key/value store module with a very simple API that can be ran in-memory or persisted to disk . 
 
 * get(key: String) -> String
-* set(key: String, value: Any) -> Nil
+* set(key: String, value: Any, ttl: Number -> Optional) -> Nil
 * del(key: String) -> Nil
 * contains(key: String) -> Boolean
 * keys() -> List<String>
 * values() -> List
 * items() -> List<List>
+
+When setting keys with a TTL, the TTL value given should be the number of seconds this value should live for.
 
 ## Usage
 

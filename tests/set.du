@@ -1,0 +1,56 @@
+import JSON;
+import System;
+
+from UnitTest import UnitTest;
+
+from "../db.du" import DB;
+
+
+class TestSetValue < UnitTest {
+    setUp() {
+        this.db = DB();
+    }
+
+    tearDown() {
+        this.db.close();
+    }
+
+    testSetStringValue() {
+        const res = this.db.set("name", "John Doe");
+        this.assertNil(res);
+    }
+
+    testSetNumberValue() {
+        const res = this.db.set("user.age", 34);
+        this.assertNil(res);
+    }
+
+    testSetValueWithTTL() {
+        const res = this.db.set("user.occupation", "Engineer", 3600);
+        this.assertNil(res);
+    }
+
+    testSetJSONString() {
+        const user = {
+            "last_name": "Doe",
+            "first_name": "John",
+            "age": 34
+        };
+
+        const userStr = JSON.stringify(user).unwrap();
+        const res = this.db.set("user_1", userStr);
+        this.assertNil(res);
+    }
+
+    testSetLoop() {
+        var res = nil;
+
+        for (var i = 0; i < 100; i += 1) {
+            res = this.db.set("{}".format(i), i);
+            this.assertNil(res);
+        }
+        
+    }
+}
+
+TestSetValue().run();

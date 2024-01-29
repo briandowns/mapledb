@@ -1,0 +1,41 @@
+import JSON;
+import System;
+
+from UnitTest import UnitTest;
+
+from "../db.du" import DB;
+
+
+class TestGetValue < UnitTest {
+    setUp() {
+        this.db = DB();
+        const res = this.db.set("name", "John Doe");
+    }
+
+    tearDown() {
+        this.db.close();
+    }
+
+    testGetValue() {
+        const res = this.db.get("name");
+        this.assertEquals(res, "John Doe");
+    }
+
+    testGetJSONString() {
+        const user = {
+            "last_name": "Doe",
+            "first_name": "John",
+            "age": 34
+        };
+
+        const userStr = JSON.stringify(user).unwrap();
+        var res = this.db.set("user_1", userStr);
+        this.assertNil(res);
+
+        res = this.db.get("user_1");
+        const parsedUser = JSON.parse(res).unwrap();
+        this.assertEquals("dict", type(parsedUser));
+    }
+}
+
+TestGetValue().run();
