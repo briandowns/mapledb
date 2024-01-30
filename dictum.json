@@ -1,7 +1,7 @@
 {
     "name": "MapleDB",
     "description": "key/value database module",
-    "version": "v0.1.0",
+    "version": "v0.2.0",
     "license": "BSD 3 clause",
     "maintainers": [
         {

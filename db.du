@@ -2,6 +2,18 @@ import Sqlite;
 import System;
 
 
+const
+    schemaCreateQuery  = "CREATE TABLE IF NOT EXISTS db (field TEXT PRIMARY KEY, value TEXT, expiresAt INTEGER)",
+    getItemQuery       = "SELECT value FROM db WHERE field = ? AND expiresAt == 0 OR expiresAt > ?",
+    setItemQuery       = "INSERT OR REPLACE INTO db (field, value, expiresAt) VALUES (?, ?, ?)",
+    deleteItemQuery    = "DELETE FROM db WHERE field = ?",
+    containsItemQuery  = "SELECT 1 FROM db WHERE field = ? AND expiresAt >= ? OR expiresAt == 0",
+    selectKeysQuery    = "SELECT field FROM db WHERE expiresAt >= ? OR expiresAt == 0",
+    selectValuesQuery  = "SELECT value FROM db WHERE expiresAt >= ? OR expiresAt == 0",
+    selectItemsQuery   = "SELECT field, value FROM db WHERE expiresAt >= ? OR expiresAt == 0",
+    itemCountQuery     = "SELECT COUNT(*) FROM db WHERE expiresAt >= ? OR expiresAt == 0",
+    deleteExpiredQuery = "DELETE * FROM db WHERE expiresAt < ? OR expiresAt != 0";
+
 /**
  * DB is a key / value store that can be either in-memory
  * or persisted to disk.
@@ -14,14 +26,14 @@ class DB {
             this.db = Sqlite.connect(":memory:").unwrap();
         }
 
-        this.setup();    
+        this.startUp(); 
     }
 
     /**
-     * setup makes sure that table the data is stored in exists.
+     * startUp makes sure that table the data is stored in exists.
      */
-    private setup() {
-        this.db.execute("CREATE TABLE IF NOT EXISTS db (field TEXT PRIMARY KEY, value TEXT, expiresAt INTEGER)").unwrap();
+    private startUp() {
+        this.db.execute(schemaCreateQuery).unwrap();
     }
 
     /**
@@ -37,7 +49,7 @@ class DB {
      */
     get(key) {
         const now = System.time();
-        const row = this.db.execute("SELECT value FROM db WHERE field = ? AND expiresAt == 0 OR expiresAt > ?", [key, now]).unwrap();
+        const row = this.db.execute(getItemQuery, [key, now]).unwrap();
         return row.len() == 0 ? "" : row[0][0];
     }
 
@@ -52,7 +64,7 @@ class DB {
             expiresAt += System.time() + ttl;
         }
         
-        this.db.execute("INSERT OR REPLACE INTO db (field, value, expiresAt) VALUES (?, ?, ?)", [key, value, expiresAt]).unwrap();
+        this.db.execute(setItemQuery, [key, value, expiresAt]).unwrap();
     }
 
     /**
@@ -60,7 +72,7 @@ class DB {
      * from the db.
      */
     del(key) {
-        return this.db.execute('DELETE FROM db WHERE field = ?', [key]).unwrap();
+        return this.db.execute(deleteItemQuery, [key]).unwrap();
     }
 
     /**
@@ -68,7 +80,7 @@ class DB {
      */
     contains(key) {
         const now = System.time();
-        const res = this.db.execute("SELECT 1 FROM db WHERE field = ? AND expiresAt >= ? OR expiresAt == 0", [key, now]).unwrap();
+        const res = this.db.execute(containsItemQuery, [key, now]).unwrap();
         return res.len() == 0 ? false : true;
     }
 
@@ -77,7 +89,7 @@ class DB {
      */
     keys() {
         const now = System.time();
-        const rows = this.db.execute("SELECT field FROM db WHERE expiresAt >= ? OR expiresAt == 0", [now]).unwrap();
+        const rows = this.db.execute(selectKeysQuery, [now]).unwrap();
         return rows.len() != 0 ? rows.map(def(r) => r[0]) : [];
     }
 
@@ -86,7 +98,7 @@ class DB {
      */
     values() {
         const now = System.time();
-        const rows = this.db.execute("SELECT value FROM db WHERE expiresAt >= ? OR expiresAt == 0", [now]).unwrap();
+        const rows = this.db.execute(selectValuesQuery, [now]).unwrap();
         return rows.len() != 0 ? rows.map(def(r) => r[0]) : [];
     }
 
@@ -95,7 +107,7 @@ class DB {
      */
     items() {
         const now = System.time();
-        const rows = this.db.execute("SELECT field, value FROM db WHERE expiresAt >= ? OR expiresAt == 0", [now]).unwrap();
+        const rows = this.db.execute(selectItemsQuery, [now]).unwrap();
         return rows;
     }
 
@@ -104,12 +116,15 @@ class DB {
      */
     len() {
         const now = System.time();
-        const rows = this.db.execute("SELECT COUNT(*) FROM db WHERE expiresAt >= ? OR expiresAt == 0", [now]).unwrap();
+        const rows = this.db.execute(itemCountQuery, [now]).unwrap();
         return rows[0][0];
     }
 
     /**
-     * purgeExpired
+     * purgeExpired removes all expired items from the store.
      */
-     purgedExpired() {}
+     purgeExpired() {
+        const now = System.time();
+        return this.db.execute(deleteExpiredQuery, [now]).unwrap();
+     }
 }
